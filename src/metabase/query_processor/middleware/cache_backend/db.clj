@@ -1,8 +1,9 @@
 (ns metabase.query-processor.middleware.cache-backend.db
   (:require [cheshire.core :as json]
             [toucan.db :as db]
-            [metabase.query-processor.middleware.cache-backend.interface :as i]
             [metabase.models.query-cache :refer [QueryCache]]
+            [metabase.public-settings :as public-settings]
+            [metabase.query-processor.middleware.cache-backend.interface :as i]
             [metabase.util :as u]))
 
 (defn- cached-results
@@ -18,7 +19,7 @@
   []
   (db/delete! QueryCache
     :updated_at [:<= (u/->Timestamp (- (System/currentTimeMillis)
-                                       (* 1000 i/max-cache-entry-age-seconds)))]))
+                                       (* 1000 (public-settings/query-caching-max-ttl))))]))
 
 (defn- save-results!
   "Save the RESULTS of query with QUERY-HASH, updating an existing QueryCache entry

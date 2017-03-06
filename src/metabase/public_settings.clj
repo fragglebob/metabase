@@ -46,6 +46,28 @@
   :type    :boolean
   :default false)
 
+
+(defsetting enable-query-caching
+  "Enable caching of query processor results?"
+  :type    :boolean
+  :default false)
+
+(defsetting query-caching-max-rows
+  "The maximum number of rows a query can return in order to be eligible for caching."
+  :type    :integer
+  :default 10000)
+
+(defsetting query-caching-max-ttl
+  "The absoulte maximum time to keep any cached query results, in seconds."
+  :type    :integer
+  :default (* 60 60 24 100)) ; 100 days
+
+(defsetting query-caching-default-ttl
+  "Default amount of time in seconds that cached results should be returned for a Card."
+  :type    :integer
+  :default (* 60 60)) ; one hour
+
+
 (defn remove-public-uuid-if-public-sharing-is-disabled
   "If public sharing is *disabled* and OBJECT has a `:public_uuid`, remove it so people don't try to use it (since it won't work).
    Intended for use as part of a `post-select` implementation for Cards and Dashboards."
@@ -70,21 +92,25 @@
 (defn public-settings
   "Return a simple map of key/value pairs which represent the public settings (`MetabaseBootstrap`) for the front-end application."
   []
-  {:admin_email           (admin-email)
-   :anon_tracking_enabled (anon-tracking-enabled)
-   :custom_geojson        (setting/get :custom-geojson)
-   :email_configured      ((resolve 'metabase.email/email-configured?))
-   :engines               ((resolve 'metabase.driver/available-drivers))
-   :ga_code               "UA-60817802-1"
-   :google_auth_client_id (setting/get :google-auth-client-id)
-   :has_sample_dataset    (db/exists? 'Database, :is_sample true)
-   :map_tile_server_url   (map-tile-server-url)
-   :password_complexity   password/active-password-complexity
-   :public_sharing        (enable-public-sharing)
-   :report_timezone       (setting/get :report-timezone)
-   :setup_token           ((resolve 'metabase.setup/token-value))
-   :site_name             (site-name)
-   :timezone_short        (short-timezone-name (setting/get :report-timezone))
-   :timezones             common/timezones
-   :types                 (types/types->parents)
-   :version               config/mb-version-info})
+  {:admin_email               (admin-email)
+   :anon_tracking_enabled     (anon-tracking-enabled)
+   :custom_geojson            (setting/get :custom-geojson)
+   :email_configured          ((resolve 'metabase.email/email-configured?))
+   :enable_query_caching      (enable-query-caching)
+   :engines                   ((resolve 'metabase.driver/available-drivers))
+   :ga_code                   "UA-60817802-1"
+   :google_auth_client_id     (setting/get :google-auth-client-id)
+   :has_sample_dataset        (db/exists? 'Database, :is_sample true)
+   :map_tile_server_url       (map-tile-server-url)
+   :password_complexity       password/active-password-complexity
+   :public_sharing            (enable-public-sharing)
+   :query-caching-max-rows    (query-caching-max-rows)
+   :query-caching-max-ttl     (query-caching-max-ttl)
+   :query-caching-default-ttl (query-caching-default-ttl)
+   :report_timezone           (setting/get :report-timezone)
+   :setup_token               ((resolve 'metabase.setup/token-value))
+   :site_name                 (site-name)
+   :timezone_short            (short-timezone-name (setting/get :report-timezone))
+   :timezones                 common/timezones
+   :types                     (types/types->parents)
+   :version                   config/mb-version-info})

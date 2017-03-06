@@ -11,11 +11,6 @@
 
    That's it. See `metabase.query-processor.middleware.cache-backend.db` for a complete example of how this is done.")
 
-(def ^:const ^Integer max-cache-entry-age-seconds
-  "The maximum age any entry should be kept in the cache.
-   Entries older than this age can be purged."
-  (* 60 60 24 100)) ; one hundred days
-
 (defprotocol IQueryProcessorCacheBackend
   "Protocol that different Metabase cache backends must implement."
   (cached-results [this, ^Integer query-hash, ^Integer max-age-seconds]
@@ -25,4 +20,4 @@
   (save-results! [this, ^Integer query-hash, results]
     "Add a cache entry with the RESULTS of running query with QUERY-HASH.
      This should replace any prior entries for QUERY-HASH and update the cache timestamp to the current system time.
-     (This is also an appropriate point to purge any entries older than `max-cache-entry-age-seconds`.)"))
+     (This is also an appropriate point to purge any entries older than the value of the `query-caching-max-ttl` Setting.)"))

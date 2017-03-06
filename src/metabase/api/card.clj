@@ -20,7 +20,8 @@
                              [permissions :as perms]
                              [table :refer [Table]]
                              [view-log :refer [ViewLog]])
-            (metabase [query-processor :as qp]
+            (metabase [public-settings :as public-settings]
+                      [query-processor :as qp]
                       [util :as u])
             [metabase.util.schema :as su])
   (:import java.util.UUID))
@@ -354,7 +355,9 @@
         query   (assoc (:dataset_query card)
                   :parameters  parameters
                   :constraints constraints
-                  :cache_ttl   (:cache_ttl card))
+                  :cache_ttl   (when (public-settings/enable-query-caching)
+                                 (or (:cache_ttl card)
+                                     (public-settings/query-caching-default-ttl))))
         options {:executed-by *current-user-id*
                  :card-id     card-id}]
     (check-not-archived card)

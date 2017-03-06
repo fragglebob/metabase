@@ -1,6 +1,10 @@
 (ns metabase.query-processor.middleware.cache
   "Middleware that returns cached results for queries when applicable.
-   Cache TTLs are set on a per-card basis; if a Card has a cache TTL set then cache results will be returned if possible.
+
+   If caching is enabled (`enable-query-caching` is `true`) cached results will be returned for Cards if possible. There's
+   a global default TTL defined by the setting `query-caching-default-ttl`, but individual Cards can override this value
+   with custom TTLs with a value for `:cache_ttl`.
+
    For all other queries, caching is skipped.
 
    Various caching backends are defined in `metabase.query-processor.middleware.cache-backend` namespaces.
@@ -10,6 +14,7 @@
     Refer to `metabase.query-processor.middleware.cache-backend.interface` for more details about how the cache backends themselves."
   (:require [clojure.tools.logging :as log]
             [metabase.config :as config]
+            [metabase.public-settings :as public-settings]
             [metabase.query-processor.middleware.cache-backend.interface :as i]
             [metabase.util :as u]))
 
@@ -51,12 +56,15 @@
           (log/info "Returning cached results for query with hash:" (u/format-color 'green query-hash) (u/emoji "💰"))))
       ;; if query is not in the cache, run it, and save the results *if* it completes successfully
       (u/prog1 (qp query)
-        (when (= (:status <>) :completed)
+        (when (and (= (:status <>) :completed)
+                   (<= (:row_count <>) (public-settings/query-caching-max-rows)))
           (log/info "Caching results for next time for query with hash:" (u/format-color 'green query-hash) (u/emoji "💰"))
           (save-results! query-hash <>)))))
 
 (defn- is-cacheable? ^Boolean [{{query-hash :query-hash} :info, cache-ttl :cache_ttl}]
-  (boolean (and query-hash cache-ttl)))
+  (boolean (and (public-settings/enable-query-caching)
+                query-hash
+                cache-ttl)))
 
 (defn maybe-return-cached-results [qp]
   (fn [query]
