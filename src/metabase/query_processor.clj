@@ -78,9 +78,9 @@
        driver-specific/process-query-in-context      ; (drivers can inject custom middleware if they implement IDriver's `process-query-in-context`)
        add-settings/add-settings
        resolve-driver/resolve-driver                 ; ▲▲▲ DRIVER RESOLUTION POINT ▲▲▲ All functions *above* will have access to the driver during PRE- *and* POST-PROCESSING
+       log-query/log-initial-query
        cache/maybe-return-cached-results
-       catch-exceptions/catch-exceptions
-       log-query/log-initial-query)
+       catch-exceptions/catch-exceptions)
    query))
 ;; ▲▲▲ PRE-PROCESSING ▲▲▲ happens from BOTTOM-TO-TOP, e.g. the results of `expand-macros` are (eventually) passed to `expand-resolve`
 
