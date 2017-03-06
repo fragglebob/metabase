@@ -10,6 +10,7 @@
                                                  [add-settings :as add-settings]
                                                  [annotate-and-sort :as annotate-and-sort]
                                                  [catch-exceptions :as catch-exceptions]
+                                                 [cache :as cache]
                                                  [cumulative-aggregations :as cumulative-ags]
                                                  [dev :as dev]
                                                  [driver-specific :as driver-specific]
@@ -77,6 +78,7 @@
        driver-specific/process-query-in-context      ; (drivers can inject custom middleware if they implement IDriver's `process-query-in-context`)
        add-settings/add-settings
        resolve-driver/resolve-driver                 ; ▲▲▲ DRIVER RESOLUTION POINT ▲▲▲ All functions *above* will have access to the driver during PRE- *and* POST-PROCESSING
+       cache/maybe-return-cached-results
        catch-exceptions/catch-exceptions
        log-query/log-initial-query)
    query))

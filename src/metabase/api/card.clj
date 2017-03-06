@@ -353,7 +353,8 @@
   (let [card    (read-check Card card-id)
         query   (assoc (:dataset_query card)
                   :parameters  parameters
-                  :constraints constraints)
+                  :constraints constraints
+                  :cache_ttl   (:cache_ttl card))
         options {:executed-by *current-user-id*
                  :card-id     card-id}]
     (check-not-archived card)
