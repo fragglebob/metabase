@@ -1,6 +1,7 @@
 (ns metabase.models.interface
   (:require [clojure.core.memoize :as memoize]
             [cheshire.core :as json]
+            [taoensso.nippy :as nippy]
             [toucan.models :as models]
             [metabase.config :as config]
             [metabase.util :as u]
@@ -9,6 +10,9 @@
 ;;; ------------------------------------------------------------ Toucan Extensions ------------------------------------------------------------
 
 (models/set-root-namespace! 'metabase.models)
+
+
+;;; types
 
 (defn- json-in [obj]
   (if (string? obj)
@@ -39,6 +43,24 @@
   :in  encrypted-json-in
   :out (comp cached-encrypted-json-out u/jdbc-clob->str))
 
+(defn compress
+  "Compress OBJ, returning a byte array."
+  [obj]
+  (nippy/freeze obj {:compressor nippy/snappy-compressor}))
+
+(defn decompress
+  "Decompress COMPRESSED-BYTES."
+  [compressed-bytes]
+  (if (instance? java.sql.Blob compressed-bytes)
+    (recur (.getBytes compressed-bytes 0 (.length compressed-bytes)))
+    (nippy/thaw compressed-bytes {:compressor nippy/snappy-compressor})))
+
+(models/add-type! :compressed
+  :in  compress
+  :out decompress)
+
+
+;;; properties
 
 (defn- add-created-at-timestamp [obj & _]
   (assoc obj :created_at (u/new-sql-timestamp)))

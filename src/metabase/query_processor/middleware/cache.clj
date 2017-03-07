@@ -43,10 +43,17 @@
        (reset! backend-instance @instance)))))
 
 
+
 ;;; ------------------------------------------------------------ Cache Operations ------------------------------------------------------------
 
-(defn- cached-results [query-hash max-age-seconds] (i/cached-results @backend-instance query-hash max-age-seconds))
-(defn- save-results!  [query-hash results]         (i/save-results!  @backend-instance query-hash results))
+(defn- cached-results [query-hash max-age-seconds]
+  (u/prog1 (i/cached-results @backend-instance query-hash max-age-seconds)
+    (when <>
+      (log/info "Returning cached results for query" (u/emoji "💾")))))
+
+(defn- save-results!  [query-hash results]
+  (log/info "Caching results for next time for query" (u/emoji "💾"))
+  (i/save-results! @backend-instance query-hash results))
 
 
 ;;; ------------------------------------------------------------ Middleware ------------------------------------------------------------
@@ -56,21 +63,21 @@
   [query]
   (hash/sha3-256 (str (select-keys query [:database :type :query :parameters :constraints]))))
 
-(defn- run-query-with-cache [qp {cache-ttl :cache_ttl, :as query}]
-  (let [query-hash (secure-hash query)]
-    (or (u/prog1 (cached-results query-hash cache-ttl)
-          (when <>
-            (log/info "Returning cached results for query" (u/emoji "💾"))))
-        ;; if query is not in the cache, run it, and save the results *if* it completes successfully
-        (u/prog1 (qp query)
-          (when (and (= (:status <>) :completed)
-                     (<= (:row_count <>) (public-settings/query-caching-max-rows)))
-            (log/info "Caching results for next time for query" (u/emoji "💾"))
-            (save-results! query-hash <>))))))
-
 (defn- is-cacheable? ^Boolean [{cache-ttl :cache_ttl}]
   (boolean (and (public-settings/enable-query-caching)
                 cache-ttl)))
+
+(defn- save-results-if-successful! [query-hash results]
+  (when (and (= (:status results) :completed)
+             (<= (:row_count results) (public-settings/query-caching-max-rows)))
+    (save-results! query-hash results)))
+
+(defn- run-query-with-cache [qp {cache-ttl :cache_ttl, :as query}]
+  (let [query-hash (secure-hash query)]
+    (or (cached-results query-hash cache-ttl)
+        (u/prog1 (qp query)
+          (save-results-if-successful! query-hash <>)))))
+
 
 (defn maybe-return-cached-results [qp]
   ;; choose the caching backend if needed

@@ -1,7 +1,7 @@
 (ns metabase.query-processor.middleware.cache-backend.db
-  (:require [cheshire.core :as json]
-            [toucan.db :as db]
-            [metabase.models.query-cache :refer [QueryCache]]
+  (:require [toucan.db :as db]
+            (metabase.models [interface :as models]
+                             [query-cache :refer [QueryCache]])
             [metabase.public-settings :as public-settings]
             [metabase.query-processor.middleware.cache-backend.interface :as i]
             [metabase.util :as u]))
@@ -28,7 +28,7 @@
   (purge-old-cache-entries!)
   (or (db/update-where! QueryCache {:query_hash query-hash}
         :updated_at (u/new-sql-timestamp)
-        :results    (json/generate-string results)) ; have to manually call generate-string here since Toucan doesn't call type conversion fns for update-where! (yet)
+        :results    (models/compress results)) ; have to manually call these here since Toucan doesn't call type conversion fns for update-where! (yet)
       (db/insert! QueryCache
         :query_hash query-hash
         :results    results))
