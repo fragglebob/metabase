@@ -137,11 +137,12 @@
                               :result_rows  (get query-result :row_count 0))
                             (dissoc :start_time_millis))]
     ;; only insert a new record into QueryExecution if the results *were not* cached (i.e., only if a Query was actually ran)
-    (when-not (:cached? query-result)
-      (save-query-execution! query-execution))
-    ;; ok, now return the results in the normal response format
-    (merge (dissoc query-execution :error :raw_query :result_rows :version)
-           query-result)))
+    (-> (if (:cached? query-result)
+          query-execution
+          (save-query-execution! query-execution))
+        ;; ok, now return the results in the normal response format
+        (dissoc :error :raw_query :result_rows :version)
+        (merge query-result))))
 
 
 (defn- assert-query-status-successful
