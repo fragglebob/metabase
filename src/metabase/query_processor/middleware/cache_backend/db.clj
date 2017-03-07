@@ -34,7 +34,7 @@
         :results    results))
   :ok)
 
-(def ^:private instance
+(def instance
   "Implementation of `IQueryProcessorCacheBackend` that uses the database for caching results."
   (reify i/IQueryProcessorCacheBackend
     (cached-results [_ query-hash max-age-seconds] (cached-results query-hash max-age-seconds))

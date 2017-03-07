@@ -367,6 +367,7 @@
 (defendpoint POST "/:card-id/query"
   "Run the query associated with a Card."
   [card-id :as {{:keys [parameters ignore_cache], :or {ignore_cache false}} :body}]
+  {ignore_cache (s/maybe s/Bool)}
   (binding [cache/*ignore-cached-results* ignore_cache]
     (run-query-for-card card-id, :parameters parameters)))
 
