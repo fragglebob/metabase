@@ -5,7 +5,8 @@
             [toucan.models :as models]
             [metabase.config :as config]
             [metabase.util :as u]
-            [metabase.util.encryption :as encryption]))
+            [metabase.util.encryption :as encryption])
+  (:import java.sql.Blob))
 
 ;;; ------------------------------------------------------------ Toucan Extensions ------------------------------------------------------------
 
@@ -51,8 +52,8 @@
 (defn decompress
   "Decompress COMPRESSED-BYTES."
   [compressed-bytes]
-  (if (instance? java.sql.Blob compressed-bytes)
-    (recur (.getBytes compressed-bytes 0 (.length compressed-bytes)))
+  (if (instance? Blob compressed-bytes)
+    (recur (.getBytes ^Blob compressed-bytes 0 (.length ^Blob compressed-bytes)))
     (nippy/thaw compressed-bytes {:compressor nippy/snappy-compressor})))
 
 (models/add-type! :compressed
