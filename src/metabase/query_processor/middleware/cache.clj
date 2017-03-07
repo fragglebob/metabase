@@ -13,6 +13,7 @@
 
     Refer to `metabase.query-processor.middleware.cache-backend.interface` for more details about how the cache backends themselves."
   (:require [clojure.tools.logging :as log]
+            [buddy.core.hash :as hash]
             [metabase.config :as config]
             [metabase.public-settings :as public-settings]
             [metabase.query-processor.middleware.cache-backend.interface :as i]
@@ -50,20 +51,25 @@
 
 ;;; ------------------------------------------------------------ Middleware ------------------------------------------------------------
 
-(defn- run-query-with-cache [qp {{query-hash :query-hash} :info, cache-ttl :cache_ttl, :as query}]
-  (or (u/prog1 (cached-results query-hash cache-ttl)
-        (when <>
-          (log/info "Returning cached results for query with hash:" (u/format-color 'green query-hash) (u/emoji "💰"))))
-      ;; if query is not in the cache, run it, and save the results *if* it completes successfully
-      (u/prog1 (qp query)
-        (when (and (= (:status <>) :completed)
-                   (<= (:row_count <>) (public-settings/query-caching-max-rows)))
-          (log/info "Caching results for next time for query with hash:" (u/format-color 'green query-hash) (u/emoji "💰"))
-          (save-results! query-hash <>)))))
+(defn- secure-hash
+  "Return a 512-bit SHA3 hash of QUERY as a key for the cache. (This is returned as a byte array.)"
+  [query]
+  (hash/sha3-512 (str (select-keys query [:database :type :query :parameters]))))
 
-(defn- is-cacheable? ^Boolean [{{query-hash :query-hash} :info, cache-ttl :cache_ttl}]
+(defn- run-query-with-cache [qp {cache-ttl :cache_ttl, :as query}]
+  (let [query-hash (secure-hash query)]
+    (or (u/prog1 (cached-results query-hash cache-ttl)
+          (when <>
+            (log/info "Returning cached results for query" (u/emoji "💰"))))
+        ;; if query is not in the cache, run it, and save the results *if* it completes successfully
+        (u/prog1 (qp query)
+          (when (and (= (:status <>) :completed)
+                     (<= (:row_count <>) (public-settings/query-caching-max-rows)))
+            (log/info "Caching results for next time for query" (u/emoji "💰"))
+            (save-results! query-hash <>))))))
+
+(defn- is-cacheable? ^Boolean [{cache-ttl :cache_ttl}]
   (boolean (and (public-settings/enable-query-caching)
-                query-hash
                 cache-ttl)))
 
 (defn maybe-return-cached-results [qp]

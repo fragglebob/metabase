@@ -9,8 +9,8 @@ databaseChangeLog:
             columns:
               - column:
                   name: query_hash
-                  type: int
-                  remarks: 'The hash of the query dictionary.'
+                  type: binary(512)
+                  remarks: 'The hash of the query dictionary. (This is a 512-bit SHA3 hash of the query dict).'
                   constraints:
                     primaryKey: true
                     nullable: false
