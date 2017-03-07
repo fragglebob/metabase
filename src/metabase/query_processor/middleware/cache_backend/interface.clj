@@ -11,15 +11,20 @@
 
    That's it. See `metabase.query-processor.middleware.cache-backend.db` for a complete example of how this is done.")
 
+
 (defprotocol IQueryProcessorCacheBackend
   "Protocol that different Metabase cache backends must implement.
-   (QUERY-HASH as passed below is a byte-array representing a 256-byte SHA3 hash; encode this as needed for use as a
-   cache entry key. Similary, RESULTS are compressed and are passed and should be returned as a byte array.)"
+
+   QUERY-HASH as passed below is a byte-array representing a 256-byte SHA3 hash; encode this as needed for use as a
+   cache entry key. RESULTS are passed (and should be returned) as a Clojure object, and individual backends are free
+   to encode this as appropriate when storing the results. (It's probably not a bad idea to compress the results; this
+   is what the `:db` backend does.)"
+
   (cached-results [this, query-hash, ^Integer max-age-seconds]
-    "Return cached (byte array) results for the query with byte array QUERY-HASH if those results are present in the cache and are less
+    "Return cached results for the query with byte array QUERY-HASH if those results are present in the cache and are less
      than MAX-AGE-SECONDS old. Otherwise, return `nil`.")
 
   (save-results! [this query-hash results]
-    "Add a cache entry with the compressed byte array RESULTS of running query with byte array QUERY-HASH.
+    "Add a cache entry with the RESULTS of running query with byte array QUERY-HASH.
      This should replace any prior entries for QUERY-HASH and update the cache timestamp to the current system time.
      (This is also an appropriate point to purge any entries older than the value of the `query-caching-max-ttl` Setting.)"))
