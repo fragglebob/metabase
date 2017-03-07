@@ -18,7 +18,7 @@
 (defn- purge-old-cache-entries!
   "Delete any cache entries that are older than the global max age `max-cache-entry-age-seconds` (currently 3 months)."
   []
-  (db/delete! QueryCache
+  (db/simple-delete! QueryCache
     :updated_at [:<= (u/->Timestamp (- (System/currentTimeMillis)
                                        (* 1000 (public-settings/query-caching-max-ttl))))]))
 
