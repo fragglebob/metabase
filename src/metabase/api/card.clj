@@ -20,9 +20,10 @@
                              [permissions :as perms]
                              [table :refer [Table]]
                              [view-log :refer [ViewLog]])
-            (metabase [public-settings :as public-settings]
-                      [query-processor :as qp]
-                      [util :as u])
+            [metabase.public-settings :as public-settings]
+            [metabase.query-processor :as qp]
+            [metabase.query-processor.middleware.cache :as cache]
+            [metabase.util :as u]
             [metabase.util.schema :as su])
   (:import java.util.UUID))
 
@@ -365,20 +366,23 @@
 
 (defendpoint POST "/:card-id/query"
   "Run the query associated with a Card."
-  [card-id :as {{:keys [parameters]} :body}]
-  (run-query-for-card card-id, :parameters parameters))
+  [card-id :as {{:keys [parameters ignore_cache], :or {ignore_cache false}} :body}]
+  (binding [cache/*ignore-cached-results* ignore_cache]
+    (run-query-for-card card-id, :parameters parameters)))
 
 (defendpoint POST "/:card-id/query/csv"
   "Run the query associated with a Card, and return its results as CSV. Note that this expects the parameters as serialized JSON in the 'parameters' parameter"
   [card-id parameters]
   {parameters (s/maybe su/JSONString)}
-  (dataset-api/as-csv (run-query-for-card card-id, :parameters (json/parse-string parameters keyword), :constraints nil)))
+  (binding [cache/*ignore-cached-results* true]
+    (dataset-api/as-csv (run-query-for-card card-id, :parameters (json/parse-string parameters keyword), :constraints nil))))
 
 (defendpoint POST "/:card-id/query/json"
   "Run the query associated with a Card, and return its results as JSON. Note that this expects the parameters as serialized JSON in the 'parameters' parameter"
   [card-id parameters]
   {parameters (s/maybe su/JSONString)}
-  (dataset-api/as-json (run-query-for-card card-id, :parameters (json/parse-string parameters keyword), :constraints nil)))
+  (binding [cache/*ignore-cached-results* true]
+    (dataset-api/as-json (run-query-for-card card-id, :parameters (json/parse-string parameters keyword), :constraints nil))))
 
 
 ;;; ------------------------------------------------------------ Sharing is Caring ------------------------------------------------------------

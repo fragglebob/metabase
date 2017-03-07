@@ -19,6 +19,12 @@
             [metabase.query-processor.middleware.cache-backend.interface :as i]
             [metabase.util :as u]))
 
+(def ^:dynamic ^Boolean *ignore-cached-results*
+  "Should we force the query to run, ignoring cached results even if they're available?
+   Setting this to `true` will run the query again and will still save the updated results."
+  false)
+
+
 ;;; ------------------------------------------------------------ Backend ------------------------------------------------------------
 
 (def ^:private backend-instance
@@ -47,9 +53,10 @@
 ;;; ------------------------------------------------------------ Cache Operations ------------------------------------------------------------
 
 (defn- cached-results [query-hash max-age-seconds]
-  (u/prog1 (i/cached-results @backend-instance query-hash max-age-seconds)
-    (when <>
-      (log/info "Returning cached results for query" (u/emoji "💾")))))
+  (when-not *ignore-cached-results*
+    (u/prog1 (i/cached-results @backend-instance query-hash max-age-seconds)
+      (when <>
+        (log/info "Returning cached results for query" (u/emoji "💾"))))))
 
 (defn- save-results!  [query-hash results]
   (log/info "Caching results for next time for query" (u/emoji "💾"))
