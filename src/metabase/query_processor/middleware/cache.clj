@@ -29,18 +29,18 @@
 
    (This should be something like `:db`, `:redis`, or `:memcached`. See the
    documentation in `metabase.query-processor.middleware.cache-backend.interface` for details on how this works.)"
-  [backend]
-  (let [backend-ns (symbol (str "metabase.query-processor.middleware.cache-backend." (munge (name backend))))]
-    (require backend-ns)
-    (log/info "Using query processor cache backend:" (u/format-color 'blue backend) (u/emoji "💰"))
-    (let [instance (ns-resolve backend-ns 'instance)]
-      (assert instance
-        (str "No var named 'instance' found in namespace " backend-ns))
-      (assert (extends? i/IQueryProcessorCacheBackend (class @instance))
-        (str "%s/instance doesn't satisfy IQueryProcessorCacheBackend" backend-ns))
-      (reset! backend-instance @instance))))
-
-(set-backend! (config/config-str :mb-qp-cache-backend))
+  ([]
+   (set-backend! (config/config-kw :mb-qp-cache-backend)))
+  ([backend]
+   (let [backend-ns (symbol (str "metabase.query-processor.middleware.cache-backend." (munge (name backend))))]
+     (require backend-ns)
+     (log/info "Using query processor cache backend:" (u/format-color 'blue backend) (u/emoji "💾"))
+     (let [instance (ns-resolve backend-ns 'instance)]
+       (assert instance
+         (str "No var named 'instance' found in namespace " backend-ns))
+       (assert (extends? i/IQueryProcessorCacheBackend (class @instance))
+         (str "%s/instance doesn't satisfy IQueryProcessorCacheBackend" backend-ns))
+       (reset! backend-instance @instance)))))
 
 
 ;;; ------------------------------------------------------------ Cache Operations ------------------------------------------------------------
@@ -54,19 +54,18 @@
 (defn- secure-hash
   "Return a 256-bit SHA3 hash of QUERY as a key for the cache. (This is returned as a byte array.)"
   [query]
-  (println "query:" query) ; NOCOMMIT
-  (hash/sha3-256 (str (select-keys query [:database :type :query :parameters]))))
+  (hash/sha3-256 (str (select-keys query [:database :type :query :parameters :constraints]))))
 
 (defn- run-query-with-cache [qp {cache-ttl :cache_ttl, :as query}]
   (let [query-hash (secure-hash query)]
     (or (u/prog1 (cached-results query-hash cache-ttl)
           (when <>
-            (log/info "Returning cached results for query" (u/emoji "💰"))))
+            (log/info "Returning cached results for query" (u/emoji "💾"))))
         ;; if query is not in the cache, run it, and save the results *if* it completes successfully
         (u/prog1 (qp query)
           (when (and (= (:status <>) :completed)
                      (<= (:row_count <>) (public-settings/query-caching-max-rows)))
-            (log/info "Caching results for next time for query" (u/emoji "💰"))
+            (log/info "Caching results for next time for query" (u/emoji "💾"))
             (save-results! query-hash <>))))))
 
 (defn- is-cacheable? ^Boolean [{cache-ttl :cache_ttl}]
@@ -74,6 +73,10 @@
                 cache-ttl)))
 
 (defn maybe-return-cached-results [qp]
+  ;; choose the caching backend if needed
+  (when-not @backend-instance
+    (set-backend!))
+  ;; ok, now do the normal middleware thing
   (fn [query]
     (if-not (is-cacheable? query)
       (qp query)
