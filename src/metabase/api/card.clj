@@ -356,7 +356,7 @@
         query   (assoc (:dataset_query card)
                   :parameters  parameters
                   :constraints constraints
-                  :cache_ttl   (when (public-settings/enable-query-caching)
+                  :cache-ttl   (when (public-settings/enable-query-caching)
                                  (or (:cache_ttl card)
                                      (public-settings/query-caching-default-ttl))))
         options {:executed-by *current-user-id*

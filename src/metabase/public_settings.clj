@@ -52,10 +52,13 @@
   :type    :boolean
   :default false)
 
-(defsetting query-caching-max-rows
-  "The maximum number of rows a query can return in order to be eligible for caching."
+(defsetting query-caching-max-bytes
+  "The maximum size, in bytes, query results can be in order to be eligible for caching."
+  ;; (This size is a measurement of the length of *uncompressed* serialized result *rows*. The actual size of
+  ;; the results as stored will vary somewhat, since this measurement doesn't include metadata returned with the
+  ;; results, and doesn't consider whether the results are compressed, as the `:db` backend does.)
   :type    :integer
-  :default 10000)
+  :default 4096)
 
 (defsetting query-caching-max-ttl
   "The absoulte maximum time to keep any cached query results, in seconds."
@@ -104,7 +107,7 @@
    :map_tile_server_url       (map-tile-server-url)
    :password_complexity       password/active-password-complexity
    :public_sharing            (enable-public-sharing)
-   :query-caching-max-rows    (query-caching-max-rows)
+   :query-caching-max-bytes    (query-caching-max-bytes)
    :query-caching-max-ttl     (query-caching-max-ttl)
    :query-caching-default-ttl (query-caching-default-ttl)
    :report_timezone           (setting/get :report-timezone)
