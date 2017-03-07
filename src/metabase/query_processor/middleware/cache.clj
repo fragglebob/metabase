@@ -52,9 +52,10 @@
 ;;; ------------------------------------------------------------ Middleware ------------------------------------------------------------
 
 (defn- secure-hash
-  "Return a 512-bit SHA3 hash of QUERY as a key for the cache. (This is returned as a byte array.)"
+  "Return a 256-bit SHA3 hash of QUERY as a key for the cache. (This is returned as a byte array.)"
   [query]
-  (hash/sha3-512 (str (select-keys query [:database :type :query :parameters]))))
+  (println "query:" query) ; NOCOMMIT
+  (hash/sha3-256 (str (select-keys query [:database :type :query :parameters]))))
 
 (defn- run-query-with-cache [qp {cache-ttl :cache_ttl, :as query}]
   (let [query-hash (secure-hash query)]
