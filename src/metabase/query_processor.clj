@@ -100,14 +100,9 @@
 ;;; +----------------------------------------------------------------------------------------------------+
 
 (defn- save-query-execution!
-  "Save (or update) a `QueryExecution`."
-  [{:keys [id], :as query-execution}]
-  (if id
-    ;; execution has already been saved, so update it
-    (u/prog1 query-execution
-      (db/update! QueryExecution id query-execution))
-    ;; first time saving execution, so insert it
-    (db/insert! QueryExecution query-execution)))
+  "Save a `QueryExecution`."
+  [query-execution]
+  (db/insert! QueryExecution query-execution))
 
 (defn- save-and-return-failed-query!
   "Save QueryExecution state and construct a failed query response"
@@ -132,18 +127,21 @@
 (defn- save-and-return-successful-query!
   "Save QueryExecution state and construct a completed (successful) query response"
   [query-execution query-result]
-  ;; record our query execution and format response
-  (-> (assoc query-execution
-        :status       :completed
-        :finished_at  (u/new-sql-timestamp)
-        :running_time (- (System/currentTimeMillis)
-                         (:start_time_millis query-execution))
-        :result_rows  (get query-result :row_count 0))
-      (dissoc :start_time_millis)
-      save-query-execution!
-      ;; at this point we've saved and we just need to massage things into our final response format
-      (dissoc :error :raw_query :result_rows :version)
-      (merge query-result)))
+  (let [query-execution (-> (assoc query-execution
+                              :status       :completed
+                              :finished_at  (if (:cached? query-result)
+                                              (:updated-at query-result)
+                                              (u/new-sql-timestamp))
+                              :running_time (- (System/currentTimeMillis)
+                                               (:start_time_millis query-execution))
+                              :result_rows  (get query-result :row_count 0))
+                            (dissoc :start_time_millis))]
+    ;; only insert a new record into QueryExecution if the results *were not* cached (i.e., only if a Query was actually ran)
+    (when-not (:cached? query-result)
+      (save-query-execution! query-execution))
+    ;; ok, now return the results in the normal response format
+    (merge (dissoc query-execution :error :raw_query :result_rows :version)
+           query-result)))
 
 
 (defn- assert-query-status-successful

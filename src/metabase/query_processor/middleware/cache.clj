@@ -54,9 +54,11 @@
 
 (defn- cached-results [query-hash max-age-seconds]
   (when-not *ignore-cached-results*
-    (u/prog1 (i/cached-results @backend-instance query-hash max-age-seconds)
-      (when <>
-        (log/info "Returning cached results for query" (u/emoji "💾"))))))
+    (when-let [results (i/cached-results @backend-instance query-hash max-age-seconds)]
+      (assert (u/is-temporal? (:updated-at results))
+        "cached-results should include an `:updated-at` field containing the date when the query was last ran.")
+      (log/info "Returning cached results for query" (u/emoji "💾"))
+      (assoc results :cached? true))))
 
 (defn- save-results!  [query-hash results]
   (log/info "Caching results for next time for query" (u/emoji "💾"))

@@ -9,10 +9,11 @@
 (defn- cached-results
   "Return cached results for QUERY-HASH if they exist and are newer than MAX-AGE-SECONDS."
   [query-hash max-age-seconds]
-  (db/select-one-field :results QueryCache
-    :query_hash query-hash
-    :updated_at [:>= (u/->Timestamp (- (System/currentTimeMillis)
-                                       (* 1000 max-age-seconds)))]))
+  (when-let [{:keys [results updated_at]} (db/select-one [QueryCache :results :updated_at]
+                                            :query_hash query-hash
+                                            :updated_at [:>= (u/->Timestamp (- (System/currentTimeMillis)
+                                                                               (* 1000 max-age-seconds)))])]
+    (assoc results :updated-at updated_at)))
 
 (defn- purge-old-cache-entries!
   "Delete any cache entries that are older than the global max age `max-cache-entry-age-seconds` (currently 3 months)."
