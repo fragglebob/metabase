@@ -66,7 +66,7 @@
   :default (* 60 60 24 100)) ; 100 days
 
 (defsetting query-caching-default-ttl
-  "Default amount of time in seconds that cached results should be returned for a Card."
+  "Default amount of time in seconds that cached results should be returned for a Question."
   :type    :integer
   :default (* 60 60)) ; one hour
 

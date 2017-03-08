@@ -187,6 +187,34 @@ const SECTIONS = [
                 getHidden: (settings) => !settings["enable-public-sharing"]
             }
         ]
+    },
+    {
+        name: "Caching",
+        settings: [
+            {
+                key: "enable-query-caching",
+                display_name: "Enable Query Caching",
+                type: "boolean"
+            },
+            {
+                key: "query-caching-max-bytes",
+                display_name: "Max Cache Entry Size",
+                type: "number",
+                getHidden: (settings) => !settings["enable-query-caching"]
+            },
+            {
+                key: "query-caching-max-ttl",
+                display_name: "Cache Entry Max TTL",
+                type: "duration",
+                getHidden: (settings) => !settings["enable-query-caching"]
+            },
+            {
+                key: "query-caching-default-ttl",
+                display_name: "Cache Entry Default TTL",
+                type: "duration",
+                getHidden: (settings) => !settings["enable-query-caching"]
+            }
+        ]
     }
 ];
 for (const section of SECTIONS) {
