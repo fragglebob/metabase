@@ -81,8 +81,8 @@
 (expect
   false
   (array=
-    (secure-hash {:query :abc, :contraints {:max-rows 1000}})
-    (secure-hash {:query :abc, :contraints nil})))
+    (secure-hash {:query :abc, :constraints {:max-rows 1000}})
+    (secure-hash {:query :abc, :constraints nil})))
 
 ;; ... but keys that are irrelevant to the query should be ignored by secure-hash
 (expect
@@ -167,7 +167,7 @@
   (tu/with-temporary-setting-values [enable-query-caching true]
     (clear-cache!)
     (run-query)
-    (tu/with-temporary-setting-values [enable-query-caching :not-cached]
+    (tu/with-temporary-setting-values [enable-query-caching false]
       (run-query))))
 
 
