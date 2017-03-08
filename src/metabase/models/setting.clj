@@ -215,7 +215,9 @@
   "Set the value of integer SETTING-OR-NAME."
   [setting-or-name new-value]
   (set-string! setting-or-name (when new-value
-                                 (assert (integer? new-value))
+                                 (assert (or (integer? new-value)
+                                             (and (string? new-value)
+                                                  (re-matches #"^\d+$" new-value))))
                                  (str new-value))))
 
 (defn set-json!
